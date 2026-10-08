@@ -1930,7 +1930,7 @@ function setMysqlGenerated(column: EditableStructureColumn, checked: boolean) {
     // Re-checking after an accidental uncheck restores the original expression
     // and storage instead of starting from a blank VIRTUAL draft.
     const original = column.original?.extra ? parseMysqlGeneratedColumnExtra(column.original.extra) : undefined;
-    column.extra.generated = original ? { ...original } : { expression: "", storage: "VIRTUAL" };
+    column.extra.generated = original ? { ...original } : { expression: "", storage: "STORED" };
     return;
   }
   // Dropping the attribute must be explicit for a column that was generated,

@@ -12,7 +12,8 @@ use super::column_alter::{
 };
 use super::column_format::{
     column_definition, has_dameng_identity, is_dameng_identity_compatible_type, is_mysql_character_data_type,
-    original_is_mysql_generated_column, original_mysql_generated_clause, original_mysql_generated_values,
+    normalize_mysql_generated_storage, original_is_mysql_generated_column, original_mysql_generated_clause,
+    original_mysql_generated_values,
 };
 use super::comments::build_sqlserver_column_comment_sql_for_profile;
 use super::dialect::{capabilities_for, database_label, is_oracle_like, StructureDialect};
@@ -56,6 +57,49 @@ pub(super) fn build_column_sql(options: &TableStructureSqlOptions, warnings: &mu
                     "Column \"{}\" is marked as generated but its expression is empty; the generated-column clause was omitted from the DDL.",
                     column.name
                 ));
+            }
+            // MySQL rejects several generated-column conversions via MODIFY:
+            // a plain column may only become a STORED generated column, only a
+            // STORED generated column may become plain again, and VIRTUAL and
+            // STORED cannot be switched (those need DROP + ADD). Surface the
+            // rejected shape as a warning instead of emitting DDL the server
+            // will refuse.
+            let original_generated = column
+                .original
+                .as_ref()
+                .and_then(|original| original.extra.as_deref())
+                .and_then(original_mysql_generated_values);
+            if let Some(generated) = column.extra.as_ref().and_then(|extra| extra.generated.as_ref()) {
+                if !generated.expression.trim().is_empty() {
+                    match original_generated {
+                        // The conversion restriction applies to MODIFY of an
+                        // existing plain column; ADD accepts VIRTUAL freely.
+                        None if column.original.is_some() => {
+                            if normalize_mysql_generated_storage(generated.storage.as_deref()) == "VIRTUAL" {
+                                warnings.push(format!(
+                                    "Column \"{}\": MySQL only allows converting a plain column into a STORED generated column; a VIRTUAL generated column requires dropping and re-adding the column.",
+                                    column.name
+                                ));
+                            }
+                        }
+                        None => {}
+                        Some((_, original_storage)) => {
+                            if normalize_mysql_generated_storage(generated.storage.as_deref()) != original_storage {
+                                warnings.push(format!(
+                                    "Column \"{}\": MySQL cannot switch a generated column between VIRTUAL and STORED in place; the column must be dropped and re-added.",
+                                    column.name
+                                ));
+                            }
+                        }
+                    }
+                }
+            } else if let Some((_, original_storage)) = original_generated {
+                if original_storage == "VIRTUAL" {
+                    warnings.push(format!(
+                        "Column \"{}\": MySQL only allows converting a STORED generated column back to a plain column; removing a VIRTUAL generated attribute requires dropping and re-adding the column.",
+                        column.name
+                    ));
+                }
             }
         }
     }

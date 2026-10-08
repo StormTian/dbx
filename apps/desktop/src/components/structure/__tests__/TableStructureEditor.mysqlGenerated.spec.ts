@@ -400,7 +400,7 @@ describe("TableStructureEditor MySQL generated columns", () => {
     let calls = mocks.buildTableStructureChangeSql.mock.calls.length;
     await waitForPreviewCalls(calls);
     let columns = await lastPreviewColumns();
-    expect(columns[0]!.extra.generated).toEqual({ expression: "", storage: "VIRTUAL" });
+    expect(columns[0]!.extra.generated).toEqual({ expression: "", storage: "STORED" });
     expect(columns[0]!.extra.autoIncrement).toBe(true);
     expect(columns[0]!.extra.onUpdateCurrentTimestamp).toBe(true);
 
@@ -415,7 +415,7 @@ describe("TableStructureEditor MySQL generated columns", () => {
     calls = mocks.buildTableStructureChangeSql.mock.calls.length;
     await waitForPreviewCalls(calls);
     columns = await lastPreviewColumns();
-    expect(columns[0]!.extra.generated).toEqual({ expression: "`price` * `quantity`", storage: "VIRTUAL" });
+    expect(columns[0]!.extra.generated).toEqual({ expression: "`price` * `quantity`", storage: "STORED" });
     expect(columns[0]!.extra.autoIncrement).toBeUndefined();
     expect(columns[0]!.extra.onUpdateCurrentTimestamp).toBeUndefined();
     // The expression editor entry is visible while the checkbox stays checked.
@@ -443,7 +443,7 @@ describe("TableStructureEditor MySQL generated columns", () => {
     const calls = mocks.buildTableStructureChangeSql.mock.calls.length;
     await waitForPreviewCalls(calls);
     const columns = await lastPreviewColumns();
-    expect(columns[0]!.extra.generated).toEqual({ expression: "", storage: "VIRTUAL" });
+    expect(columns[0]!.extra.generated).toEqual({ expression: "", storage: "STORED" });
     expect(columns[0]!.extra.autoIncrement).toBe(true);
     expect(columns[0]!.defaultValue).toBe("0");
 
@@ -500,7 +500,7 @@ describe("TableStructureEditor MySQL generated columns", () => {
     const calls = mocks.buildTableStructureChangeSql.mock.calls.length;
     await waitForPreviewCalls(calls);
     const columns = await lastPreviewColumns();
-    expect(columns[0]!.extra.generated).toEqual({ expression: "", storage: "VIRTUAL" });
+    expect(columns[0]!.extra.generated).toEqual({ expression: "", storage: "STORED" });
 
     checkbox.checked = false;
     checkbox.dispatchEvent(new Event("change"));
